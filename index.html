@@ -1,0 +1,193 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Game Peluang PRO</title>
+    <style>
+        body { font-family: Arial; text-align: center; background: #eef; }
+        .box {
+            background: white;
+            padding: 20px;
+            margin: 30px auto;
+            width: 420px;
+            border-radius: 10px;
+            box-shadow: 0 0 10px gray;
+        }
+        button, select, input {
+            padding: 8px;
+            margin: 5px;
+        }
+    </style>
+</head>
+<body>
+
+<div class="box" id="loginBox">
+    <h2>🔐 Login Siswa</h2>
+    <input type="text" id="nama" placeholder="Masukkan nama">
+    <br>
+    <button onclick="login()">Masuk</button>
+</div>
+
+<div class="box" id="gameBox" style="display:none;">
+    <h2>🎲 Game Peluang</h2>
+    <p id="user"></p>
+
+    Level:
+    <select id="level">
+        <option value="mudah">Mudah</option>
+        <option value="sedang">Sedang</option>
+        <option value="sulit">Sulit</option>
+    </select>
+
+    <p id="soal"></p>
+    ⏱ Waktu: <span id="timer">10</span>
+
+    <br>
+    <input type="text" id="jawaban" placeholder="Contoh: 1/2 atau 0.5">
+    <br>
+
+    <button onclick="cekJawaban()">Jawab</button>
+    <button onclick="buatSoal()">Soal Baru</button>
+
+    <p id="hasil"></p>
+    <h3>Skor: <span id="skor">0</span></h3>
+
+    <button onclick="lihatRanking()">📊 Lihat Ranking</button>
+</div>
+
+<div class="box" id="rankingBox" style="display:none;">
+    <h2>🏆 Ranking</h2>
+    <ul id="rankingList"></ul>
+    <button onclick="kembali()">Kembali</button>
+</div>
+
+<audio id="benarSound" src="https://www.soundjay.com/button/sounds/button-3.mp3"></audio>
+<audio id="salahSound" src="https://www.soundjay.com/button/sounds/button-10.mp3"></audio>
+
+<script>
+let namaUser = "";
+let skor = 0;
+let jawabanBenar = 0;
+let waktu = 10;
+let interval;
+
+// LOGIN
+function login() {
+    namaUser = document.getElementById("nama").value;
+    if (!namaUser) return alert("Masukkan nama!");
+
+    document.getElementById("loginBox").style.display = "none";
+    document.getElementById("gameBox").style.display = "block";
+    document.getElementById("user").innerText = "👤 " + namaUser;
+
+    buatSoal();
+}
+
+// TIMER
+function mulaiTimer() {
+    waktu = 10;
+    document.getElementById("timer").innerText = waktu;
+
+    clearInterval(interval);
+    interval = setInterval(() => {
+        waktu--;
+        document.getElementById("timer").innerText = waktu;
+
+        if (waktu <= 0) {
+            clearInterval(interval);
+            document.getElementById("hasil").innerText = "⏰ Waktu habis!";
+        }
+    }, 1000);
+}
+
+// SOAL BERDASARKAN LEVEL
+function buatSoal() {
+    let level = document.getElementById("level").value;
+
+    if (level === "mudah") {
+        document.getElementById("soal").innerText =
+            "Peluang muncul angka pada koin?";
+        jawabanBenar = 0.5;
+    }
+    else if (level === "sedang") {
+        document.getElementById("soal").innerText =
+            "Peluang muncul bilangan prima pada dadu?";
+        jawabanBenar = 3/6;
+    }
+    else {
+        document.getElementById("soal").innerText =
+            "Peluang mengambil kartu merah dari 52 kartu?";
+        jawabanBenar = 26/52;
+    }
+
+    document.getElementById("jawaban").value = "";
+    document.getElementById("hasil").innerText = "";
+
+    mulaiTimer();
+}
+
+// CEK JAWABAN
+function cekJawaban() {
+    clearInterval(interval);
+
+    let input = document.getElementById("jawaban").value;
+    let nilai;
+
+    if (input.includes("/")) {
+        let p = input.split("/");
+        nilai = p[0] / p[1];
+    } else {
+        nilai = parseFloat(input);
+    }
+
+    if (Math.abs(nilai - jawabanBenar) < 0.01) {
+        skor += 10;
+        document.getElementById("hasil").innerText = "✅ Benar!";
+        document.getElementById("benarSound").play();
+    } else {
+        document.getElementById("hasil").innerText = "❌ Salah!";
+        document.getElementById("salahSound").play();
+    }
+
+    document.getElementById("skor").innerText = skor;
+    simpanRanking();
+}
+
+// SIMPAN RANKING
+function simpanRanking() {
+    let data = JSON.parse(localStorage.getItem("ranking")) || [];
+
+    let index = data.findIndex(d => d.nama === namaUser);
+    if (index >= 0) {
+        data[index].skor = skor;
+    } else {
+        data.push({nama: namaUser, skor: skor});
+    }
+
+    data.sort((a,b)=>b.skor-a.skor);
+    localStorage.setItem("ranking", JSON.stringify(data));
+}
+
+// TAMPILKAN RANKING
+function lihatRanking() {
+    document.getElementById("gameBox").style.display = "none";
+    document.getElementById("rankingBox").style.display = "block";
+
+    let data = JSON.parse(localStorage.getItem("ranking")) || [];
+    let list = document.getElementById("rankingList");
+    list.innerHTML = "";
+
+    data.forEach(d => {
+        let li = document.createElement("li");
+        li.innerText = d.nama + " - " + d.skor;
+        list.appendChild(li);
+    });
+}
+
+function kembali() {
+    document.getElementById("rankingBox").style.display = "none";
+    document.getElementById("gameBox").style.display = "block";
+}
+</script>
+
+</body>
+</html>
